@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>This Way</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main>
+        <h1>This Way</h1>
+
+        <p>
+            Meet neighbors you might actually want to know.
+        </p>
+
+        <form id="profile-form">
+
+            <label for="about-me">
+                Tell us a little about yourself
+            </label>
+
+            <textarea
+                id="about-me"
+                placeholder="I'm studying computer science, like trying new restaurants, walking around the city, and talking about tech..."
+            ></textarea>
+
+            <label for="friend-type">
+                What are you looking for?
+            </label>
+
+            <select id="friend-type">
+                <option value="">Choose one</option>
+                <option value="casual">Casual friends</option>
+                <option value="activity">Activity buddies</option>
+                <option value="close">Close friendships</option>
+                <option value="networking">Networking</option>
+            </select>
+
+            <label for="availability">
+                When are you usually free?
+            </label>
+
+            <select id="availability">
+                <option value="">Choose one</option>
+                <option value="weeknights">Weeknights</option>
+                <option value="weekend-mornings">Weekend mornings</option>
+                <option value="weekend-afternoons">Weekend afternoons</option>
+                <option value="weekend-nights">Weekend nights</option>
+            </select>
+
+            <button type="submit">
+                Find My Matches
+            </button>
+
+        </form>
+
+        <section id="results"></section>
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
