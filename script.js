@@ -1,5 +1,16 @@
 const profileForm = document.getElementById("profile-form");
 
+// Restore the saved profile so residents can review or edit their answers.
+const savedProfile = localStorage.getItem("thisWayProfile");
+
+if (savedProfile) {
+    const profile = JSON.parse(savedProfile);
+
+    document.getElementById("about-me").value = profile.aboutMe;
+    document.getElementById("friend-type").value = profile.friendType;
+    document.getElementById("availability").value = profile.availability;
+}
+
 profileForm.addEventListener("submit", function(event) {
     event.preventDefault();
 
