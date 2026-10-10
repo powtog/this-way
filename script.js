@@ -11,6 +11,52 @@ if (savedProfile) {
     document.getElementById("availability").value = profile.availability;
 }
 
+// Fictional residents in one demo building for testing matches.
+const neighbors = [
+    {
+        id: "demo-resident-001",
+        name: "Alex",
+        aboutMe: "I enjoy neighborhood walks, coffee, and photography.",
+        friendType: "activity",
+        availability: "weeknights"
+    },
+    {
+        id: "demo-resident-002",
+        name: "Sam",
+        aboutMe: "I love gardening, park picnics, and cooking.",
+        friendType: "casual",
+        availability: "weekend-afternoons"
+    },
+    {
+        id: "demo-resident-003",
+        name: "Jordan",
+        aboutMe: "I'm studying computer science and enjoy hiking.",
+        friendType: "close",
+        availability: "weekend-mornings"
+    },
+    {
+        id: "demo-resident-004",
+        name: "Priya",
+        aboutMe: "I enjoy running, outdoor yoga, and exploring parks.",
+        friendType: "activity",
+        availability: "weekend-mornings"
+    },
+    {
+        id: "demo-resident-005",
+        name: "Marcus",
+        aboutMe: "I work in design and enjoy sketching outside and talking about creative projects.",
+        friendType: "networking",
+        availability: "weeknights"
+    },
+    {
+        id: "demo-resident-006",
+        name: "Taylor",
+        aboutMe: "I enjoy reading, birdwatching, and relaxed walks with friends.",
+        friendType: "close",
+        availability: "weekday-afternoons"
+    }
+];
+
 profileForm.addEventListener("submit", function(event) {
     event.preventDefault();
 
@@ -33,12 +79,34 @@ const profile = {
     availability: availability
 };
 
+// Find neighbors who are free at the same time as the resident.
+const availableNeighbors = neighbors.filter(function(neighbor) {
+    return neighbor.availability === profile.availability;
+});
+
+
+
+console.log("Neighbors with matching availability:", availableNeighbors);
+
 console.log(profile);
 
 // Save this profile in the browser so it survives a reload.
 localStorage.setItem("thisWayProfile", JSON.stringify(profile));
 
-// Displays the results of what the user has filled out onto the page. 
-results.textContent =
-    `You're looking for ${profile.friendType} friendships and are free ${profile.availability}.`;
+// Clear the previous results before showing this submission.
+results.textContent = "";
+
+if (availableNeighbors.length === 0) {
+    results.textContent = "No neighbors share that availability yet.";
+} else {
+    const heading = document.createElement("h2");
+    heading.textContent = "Neighbors who share your availability";
+    results.appendChild(heading);
+
+    availableNeighbors.forEach(function(neighbor) {
+        const description = document.createElement("p");
+        description.textContent = `${neighbor.name}: ${neighbor.aboutMe}`;
+        results.appendChild(description);
+    });
+}
 });
