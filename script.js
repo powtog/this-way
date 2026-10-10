@@ -57,56 +57,81 @@ const neighbors = [
     }
 ];
 
-profileForm.addEventListener("submit", function(event) {
-    event.preventDefault();
-
-
-const aboutMe = document.getElementById("about-me").value.trim();
-const friendType = document.getElementById("friend-type").value;
-const availability = document.getElementById("availability").value;
-
-const results = document.getElementById("results");
-
-// Checks that no fields are empty.
-if (!aboutMe || !friendType || !availability) {
-    results.textContent = "Please fill out all three fields.";
-    return;
-}
-
-const profile = {
-    aboutMe: aboutMe,
-    friendType: friendType,
-    availability: availability
+// Translate stored values into labels people can read.
+const friendshipLabels = {
+    casual: "Casual friends",
+    activity: "Activity buddies",
+    close: "Close friendships",
+    networking: "Networking"
 };
 
-// Find neighbors who are free at the same time as the resident.
-const availableNeighbors = neighbors.filter(function(neighbor) {
-    return neighbor.availability === profile.availability;
-});
+profileForm.addEventListener("submit", function(event) {
+    // Handle the form here instead of letting the browser navigate away.
+    event.preventDefault();
 
+    const aboutMe = document.getElementById("about-me").value.trim();
+    const friendType = document.getElementById("friend-type").value;
+    const availability = document.getElementById("availability").value;
+    const results = document.getElementById("results");
 
+    // Stop early if an answer is missing.
+    if (!aboutMe || !friendType || !availability) {
+        results.textContent = "Please fill out all three fields.";
+        return;
+    }
 
-console.log("Neighbors with matching availability:", availableNeighbors);
+    const profile = {
+        aboutMe: aboutMe,
+        friendType: friendType,
+        availability: availability
+    };
 
-console.log(profile);
-
-// Save this profile in the browser so it survives a reload.
-localStorage.setItem("thisWayProfile", JSON.stringify(profile));
-
-// Clear the previous results before showing this submission.
-results.textContent = "";
-
-if (availableNeighbors.length === 0) {
-    results.textContent = "No neighbors share that availability yet.";
-} else {
-    const heading = document.createElement("h2");
-    heading.textContent = "Neighbors who share your availability";
-    results.appendChild(heading);
-
-    availableNeighbors.forEach(function(neighbor) {
-        const description = document.createElement("p");
-        description.textContent = `${neighbor.name}: ${neighbor.aboutMe}`;
-        results.appendChild(description);
+    // filter() makes a new list containing only neighbors with the same schedule.
+    const availableNeighbors = neighbors.filter(function(neighbor) {
+        return neighbor.availability === profile.availability;
     });
-}
+
+    // Rank shared friendship goals first, keeping other available neighbors visible.
+    availableNeighbors.sort(function(firstNeighbor, secondNeighbor) {
+        const firstMatches = firstNeighbor.friendType === profile.friendType;
+        const secondMatches = secondNeighbor.friendType === profile.friendType;
+
+        // true becomes 1 and false becomes 0; a negative result puts firstNeighbor first.
+        return Number(secondMatches) - Number(firstMatches);
+    });
+
+    console.log("Neighbors with matching availability:", availableNeighbors);
+    console.log(profile);
+
+    // Save this profile in the browser so it survives a reload.
+    localStorage.setItem("thisWayProfile", JSON.stringify(profile));
+
+    // Clear the previous results before showing this submission.
+    results.textContent = "";
+
+    if (availableNeighbors.length === 0) {
+        results.textContent = "No neighbors share that availability yet.";
+    } else {
+        const heading = document.createElement("h2");
+        heading.textContent = "Neighbors who share your availability";
+        results.appendChild(heading);
+
+        // Build one paragraph per neighbor, with a reason for the recommendation.
+        availableNeighbors.forEach(function(neighbor) {
+            const description = document.createElement("p");
+            const sameFriendshipGoal = neighbor.friendType === profile.friendType;
+
+            const matchReason = sameFriendshipGoal
+                ? "You share availability and a friendship goal."
+                : "You share availability.";
+
+            // Look up a readable label using the neighbor's stored friendship value.
+            const friendshipLabel = friendshipLabels[neighbor.friendType];
+
+            description.textContent =
+                `${neighbor.name}: ${neighbor.aboutMe} Looking for: ${friendshipLabel}. ${matchReason}`;
+
+            results.appendChild(description);
+        });
+    }
 });
