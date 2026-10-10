@@ -24,6 +24,9 @@ const profile = {
 
 console.log(profile);
 
+// Save this profile in the browser so it survives a reload.
+localStorage.setItem("thisWayProfile", JSON.stringify(profile));
+
 // Displays the results of what the user has filled out onto the page. 
 results.textContent =
     `You're looking for ${profile.friendType} friendships and are free ${profile.availability}.`;
