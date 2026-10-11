@@ -194,17 +194,27 @@ document.getElementById("try-demo").addEventListener("click", function() {
     document.getElementById("demo-app").hidden = false;
     if (currentProfile) {
         fillProfileForm(currentProfile);
-        renderMatches();
-        showView("matches-view");
     } else {
-        // A fictional starting profile makes the demo immediately usable and editable.
         fillProfileForm({
-            aboutMe: "I enjoy neighborhood walks, photography, and meeting new people.",
-            friendType: "activity",
-            availability: "weeknights"
+            aboutMe: "",
+            friendType: "",
+            availability: ""
         });
-        showView("profile-view");
     }
+    // Always let visitors review their profile before continuing to matches.
+    showView("profile-view");
+});
+
+document.getElementById("use-example").addEventListener("click", function() {
+    // Fill the form only: the visitor still chooses when to save and find matches.
+    fillProfileForm({
+        aboutMe: "I enjoy neighborhood walks, photography, and meeting new people.",
+        friendType: "activity",
+        availability: "weeknights"
+    });
+    document.getElementById("profile-error").textContent = "";
+    statusMessage.textContent = "Example answers filled in. Edit them or choose Find My Matches to continue.";
+    document.getElementById("about-me").focus();
 });
 
 document.querySelectorAll("[data-view]").forEach(function(button) {
@@ -215,6 +225,7 @@ document.querySelectorAll("[data-view]").forEach(function(button) {
             return;
         }
         statusMessage.textContent = "";
+        if (button.dataset.view === "matches-view") renderMatches();
         showView(button.dataset.view);
     });
 });
