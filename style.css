@@ -33,24 +33,24 @@ p { color: var(--muted); }
 .demo-badge { font-size: .75rem; border: 1px solid var(--line); padding: 5px 12px; border-radius: 30px; white-space: nowrap; }
 .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .7rem; font-weight: 750; color: var(--green); margin-bottom: 22px; }
 #welcome { padding-top: 72px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 50px; align-items: center; }
-#welcome h1 { font-size: clamp(3.1rem, 6.5vw, 5.3rem); font-weight: 650; margin-bottom: 25px; }
-#welcome h1 em { font-family: Georgia, serif; font-weight: 400; color: var(--green); }
+#welcome h1 { font-size: clamp(1.65rem, 2.8vw, 2.35rem); line-height: 1.25; font-weight: 650; margin-bottom: 25px; }
 .welcome-copy > p:not(.eyebrow) { max-width: 420px; }
 #try-demo { margin: 10px 0 18px; padding: 14px 26px; }
 #try-demo span { margin-left: 28px; }
+.welcome-copy > .welcome-message { max-width: none; color: var(--ink); font-size: clamp(3.1rem, 6.5vw, 5.3rem); line-height: 1.1; letter-spacing: -.045em; font-weight: 650; margin-bottom: 25px; }
+.welcome-message em { font-family: Georgia, serif; font-weight: 400; color: var(--green); }
 .welcome-note { font-size: .8rem; }
 /* A lightweight CSS illustration avoids external image downloads. */
 .building-scene { background: #e2e9d9; border-radius: 120px 120px 22px 22px; min-height: 440px; padding: 42px 35px 24px; overflow: hidden; }
 .scene-caption { text-align: center; font-size: .6rem; letter-spacing: .17em; margin: 5px 0 35px; }
 .building { background: #d3ac82; border: 10px solid #e5c7a3; border-bottom: 0; border-radius: 8px 8px 0 0; max-width: 250px; margin: auto; padding: 25px 20px 32px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 17px 25px; box-shadow: 15px 10px 0 #c3cfb8; }
-.building span { display: grid; place-items: center; height: 64px; border-radius: 25px 25px 3px 3px; background: #345747; color: #fff6dc; border: 5px solid #f5e5c9; font: 1.4rem Georgia, serif; }
-.building span:nth-child(2n) { background: #ad623f; }
-.building span:nth-child(3n) { background: #706748; }
+/* Yellow glass, transoms, and projecting sills make these read as lit windows. */
+.building span { position: relative; display: grid; place-items: center; height: 64px; padding-top: 12px; border-radius: 3px 3px 0 0; background: linear-gradient(135deg, #ffffe2, #e7e7a3); color: #634825; border: 5px solid #f5e5c9; box-shadow: 0 4px 0 2px #f5e5c9, 0 0 14px #ffe8a766; font: 1.4rem Georgia, serif; }
+.building span::before { content: ""; position: absolute; top: 12px; left: 0; right: 0; height: 3px; background: #f5e5c9; }
 .scene-label { border-top: 2px solid #6d805e; margin-top: 4px; padding-top: 18px; font-weight: 650; }
-.scene-label span { display: block; font-weight: 400; font-size: .75rem; }
+.scene-label em { font-family: Georgia, serif; font-weight: 400; color: var(--green); }
 .welcome-steps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); gap: 40px; padding-top: 30px; }
 .welcome-steps p { font-size: .85rem; }
-.welcome-steps span { display: block; font-size: .65rem; color: var(--green); margin-bottom: 12px; }
 .welcome-steps strong { display: block; color: var(--ink); font-size: 1rem; margin-bottom: 6px; }
 .building-banner { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 24px 0 16px; font-size: .8rem; }
 .building-banner strong { color: var(--ink); font-size: 1rem; }
