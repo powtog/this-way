@@ -132,6 +132,48 @@ profileForm.addEventListener("submit", function(event) {
                 `${neighbor.name}: ${neighbor.aboutMe} Looking for: ${friendshipLabel}. ${matchReason}`;
 
             results.appendChild(description);
+
+            // Ask for AI only when clicked, rather than spending quota on every match.
+            const activityButton = document.createElement("button");
+            activityButton.type = "button";
+            activityButton.textContent = "Suggest an outdoor activity with Gemma";
+
+            const activityResult = document.createElement("p");
+            activityResult.setAttribute("aria-live", "polite");
+
+            activityButton.addEventListener("click", async function() {
+                activityButton.disabled = true;
+                activityResult.textContent = "Gemma is thinking of an activity…";
+
+                try {
+                    // fetch() sends these profiles to our backend, which holds the key.
+                    const response = await fetch("/api/activity", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ profile: profile, neighbor: neighbor })
+                    });
+
+                    // Live Server cannot run our backend; use the Node server instead.
+                    if (!(response.headers.get("content-type") || "").includes("application/json")) {
+                        throw new Error("Open the app at http://127.0.0.1:3000 using the Node server.");
+                    }
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || "Could not generate an activity.");
+                    }
+
+                    // Treat AI output as text, never executable HTML.
+                    activityResult.textContent = `Gemma suggestion: ${data.activity}`;
+                } catch (error) {
+                    activityResult.textContent = error.message;
+                } finally {
+                    activityButton.disabled = false;
+                }
+            });
+
+            results.appendChild(activityButton);
+            results.appendChild(activityResult);
         });
     }
 });
