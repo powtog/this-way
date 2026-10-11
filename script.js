@@ -103,13 +103,19 @@ function showView(viewId) {
 // Cards use textContent so profile text is displayed safely as text.
 function createNeighborCard(neighbor) {
     const card = document.createElement("article");
+    card.className = "neighbor-card";
+    const avatar = document.createElement("span");
+    avatar.className = `avatar avatar-${neighbor.id.slice(-1)}`;
+    avatar.textContent = neighbor.name[0];
+    avatar.setAttribute("aria-hidden", "true");
     const name = document.createElement("h3");
     name.textContent = neighbor.name;
     const introduction = document.createElement("p");
     introduction.textContent = neighbor.aboutMe;
     const preferences = document.createElement("p");
+    preferences.className = "preferences";
     preferences.textContent = `${friendshipLabels[neighbor.friendType]} · ${availabilityLabels[neighbor.availability]}`;
-    card.append(name, introduction, preferences);
+    card.append(avatar, name, introduction, preferences);
     return card;
 }
 
@@ -121,9 +127,13 @@ function addActivityButton(card, neighbor, profile) {
 
     const activityResult = document.createElement("p");
     activityResult.setAttribute("aria-live", "polite");
+    activityResult.className = "activity-result";
 
     activityButton.addEventListener("click", async function() {
         activityButton.disabled = true;
+        activityButton.textContent = "Finding an idea…";
+        activityResult.dataset.state = "loading";
+        activityResult.setAttribute("aria-busy", "true");
         activityResult.textContent = "Gemma is thinking of an activity…";
 
         try {
@@ -131,7 +141,8 @@ function addActivityButton(card, neighbor, profile) {
             const response = await fetch("/api/activity", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ profile: profile, neighbor: neighbor })
+                body: JSON.stringify({ profile: profile, neighbor: neighbor }),
+                signal: AbortSignal.timeout(60000)
             });
 
             // Live Server cannot run our backend; use the Node server instead.
@@ -146,10 +157,17 @@ function addActivityButton(card, neighbor, profile) {
 
             // Treat AI output as text, never executable HTML.
             activityResult.textContent = `Gemma suggestion: ${data.activity}`;
+            activityResult.dataset.state = "success";
         } catch (error) {
-            activityResult.textContent = error.message;
+            activityResult.dataset.state = "error";
+            activityResult.textContent = error.name === "TimeoutError"
+                ? "This is taking longer than expected. Please try again."
+                : error.message;
         } finally {
             activityButton.disabled = false;
+            activityButton.textContent = activityResult.dataset.state === "error"
+                ? "Try activity suggestion again" : "Suggest an outdoor activity with Gemma";
+            activityResult.setAttribute("aria-busy", "false");
         }
     });
 
@@ -168,12 +186,24 @@ function renderMatches() {
     });
     results.textContent = "";
     if (availableNeighbors.length === 0) {
-        results.textContent = "No neighbors share that availability yet. Explore Community to meet everyone, or edit your preferences.";
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        const title = document.createElement("h3");
+        title.textContent = "Different schedules. Still good neighbors.";
+        const explanation = document.createElement("p");
+        explanation.textContent = "Nobody shares that availability yet. Meet everyone in Community, or adjust your preferences.";
+        const browse = document.createElement("button");
+        browse.type = "button";
+        browse.textContent = "Explore the community";
+        browse.addEventListener("click", () => showView("community-view"));
+        empty.append(title, explanation, browse);
+        results.appendChild(empty);
         return;
     }
     availableNeighbors.forEach(function(neighbor) {
         const card = createNeighborCard(neighbor);
         const reason = document.createElement("p");
+        reason.className = "match-reason";
         reason.textContent = neighbor.friendType === currentProfile.friendType
             ? "You share availability and a friendship goal."
             : "You share availability.";

@@ -10,20 +10,34 @@
 <body>
 
     <main>
-        <h1>This Way</h1>
-
-        <p>
-            Meet neighbors you might actually want to know.
-        </p>
+        <header class="app-header">
+            <a class="brand" href="/" aria-label="This Way home"><span class="brand-mark" aria-hidden="true">↗</span> This Way</a>
+            <span class="header-note">Less scrolling. More hellos.</span>
+            <span class="demo-badge">Interactive demo</span>
+        </header>
 
         <section id="welcome" aria-labelledby="welcome-title">
-            <h2 id="welcome-title">A familiar face starts with hello.</h2>
+            <div class="welcome-copy">
+            <p class="eyebrow">Your next friend might live next door</p>
+            <h1 id="welcome-title">A familiar face starts with <em>hello.</em></h1>
             <p>Explore Maple Court, a fictional apartment building with six neighbors open to making friends.</p>
-            <button id="try-demo" type="button">Try the demo</button>
+            <button id="try-demo" type="button">Try the demo <span aria-hidden="true">↗</span></button>
+            <p class="welcome-note">Six neighbors. One building. A reason to get outside.</p>
+            </div>
+            <div class="building-scene" aria-hidden="true">
+                <div class="scene-caption">GOOD COMPANY, CLOSER TO HOME</div>
+                <div class="building"><span>A</span><span>S</span><span>J</span><span>P</span><span>M</span><span>T</span></div>
+                <div class="scene-label">Maple Court <span>Meet your neighbors ↗</span></div>
+            </div>
+            <div class="welcome-steps">
+                <p><span>01</span><strong>Be yourself</strong>Share what you enjoy and when you’re free.</p>
+                <p><span>02</span><strong>Find familiar ground</strong>Discover neighbors with room for a new friend.</p>
+                <p><span>03</span><strong>Take it outside</strong>Let Gemma help turn a hello into a plan.</p>
+            </div>
         </section>
 
         <div id="demo-app" hidden>
-        <p>Demo building: Maple Court · All neighbors are fictional. No account needed.</p>
+        <p class="building-banner"><strong>Maple Court</strong><span>Fictional neighbors · No account needed</span></p>
         <nav aria-label="Demo navigation">
             <button type="button" data-view="matches-view">Suggested matches</button>
             <button type="button" data-view="community-view">Community</button>
@@ -32,6 +46,7 @@
         <p id="app-status" role="status"></p>
 
         <section id="profile-view" hidden aria-labelledby="profile-title">
+        <p class="eyebrow">A little about you</p>
         <h2 id="profile-title" tabindex="-1">Your demo profile</h2>
         <p>Use fictional details. Your preferences stay in this browser. Requesting an activity sends your introduction and the selected neighbor’s profile to Google-hosted Gemma.</p>
         <button id="use-example" type="button">Use example answers</button>
@@ -83,17 +98,20 @@
         </section>
 
         <section id="matches-view" hidden aria-labelledby="matches-title">
+            <p class="eyebrow">Make room for a new connection</p>
             <h2 id="matches-title" tabindex="-1">Suggested matches</h2>
             <p>We match schedules, then prioritize shared friendship goals. Gemma suggests activities; it does not rank these neighbors.</p>
             <div id="results"></div>
         </section>
 
         <section id="community-view" hidden aria-labelledby="community-title">
+            <p class="eyebrow">Familiar faces, new possibilities</p>
             <h2 id="community-title" tabindex="-1">Meet your community</h2>
             <p>All six demo neighbors are open to making friends, including people with different schedules or friendship goals.</p>
             <div id="community-list"></div>
         </section>
         </div>
+        <footer>Built for real-world connection.<span>This Way · Hacktoberfest 2026</span></footer>
     </main>
 
     <script src="script.js"></script>
