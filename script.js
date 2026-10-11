@@ -1,15 +1,7 @@
 const profileForm = document.getElementById("profile-form");
-
-// Restore the saved profile so residents can review or edit their answers.
-const savedProfile = localStorage.getItem("thisWayProfile");
-
-if (savedProfile) {
-    const profile = JSON.parse(savedProfile);
-
-    document.getElementById("about-me").value = profile.aboutMe;
-    document.getElementById("friend-type").value = profile.friendType;
-    document.getElementById("availability").value = profile.availability;
-}
+const results = document.getElementById("results");
+const statusMessage = document.getElementById("app-status");
+let currentProfile = null;
 
 // Fictional residents in one demo building for testing matches.
 const neighbors = [
@@ -65,115 +57,188 @@ const friendshipLabels = {
     networking: "Networking"
 };
 
-profileForm.addEventListener("submit", function(event) {
-    // Handle the form here instead of letting the browser navigate away.
-    event.preventDefault();
+const availabilityLabels = {
+    "weekday-mornings": "Weekday mornings",
+    "weekday-afternoons": "Weekday afternoons",
+    "weeknights": "Weeknights",
+    "weekend-mornings": "Weekend mornings",
+    "weekend-afternoons": "Weekend afternoons",
+    "weekend-nights": "Weekend nights"
+};
 
-    const aboutMe = document.getElementById("about-me").value.trim();
-    const friendType = document.getElementById("friend-type").value;
-    const availability = document.getElementById("availability").value;
-    const results = document.getElementById("results");
+// Check saved data before using it: storage may be old, damaged, or unavailable.
+function isValidProfile(profile) {
+    return profile && typeof profile.aboutMe === "string" &&
+        profile.aboutMe.trim().length > 0 && profile.aboutMe.length <= 2000 &&
+        Object.hasOwn(friendshipLabels, profile.friendType) &&
+        Object.hasOwn(availabilityLabels, profile.availability);
+}
 
-    // Stop early if an answer is missing.
-    if (!aboutMe || !friendType || !availability) {
-        results.textContent = "Please fill out all three fields.";
-        return;
-    }
+try {
+    const savedProfile = JSON.parse(localStorage.getItem("thisWayProfile"));
+    if (isValidProfile(savedProfile)) currentProfile = savedProfile;
+} catch {
+    // A storage problem should not stop someone from trying the demo.
+    statusMessage.textContent = "Saved preferences could not be loaded. You can still try the demo.";
+}
 
-    const profile = {
-        aboutMe: aboutMe,
-        friendType: friendType,
-        availability: availability
-    };
+function fillProfileForm(profile) {
+    document.getElementById("about-me").value = profile.aboutMe;
+    document.getElementById("friend-type").value = profile.friendType;
+    document.getElementById("availability").value = profile.availability;
+}
 
-    // filter() makes a new list containing only neighbors with the same schedule.
-    const availableNeighbors = neighbors.filter(function(neighbor) {
-        return neighbor.availability === profile.availability;
+// A view is simply a section of the page. Show one and hide the others.
+function showView(viewId) {
+    ["matches-view", "community-view", "profile-view"].forEach(function(id) {
+        document.getElementById(id).hidden = id !== viewId;
     });
-
-    // Rank shared friendship goals first, keeping other available neighbors visible.
-    availableNeighbors.sort(function(firstNeighbor, secondNeighbor) {
-        const firstMatches = firstNeighbor.friendType === profile.friendType;
-        const secondMatches = secondNeighbor.friendType === profile.friendType;
-
-        // true becomes 1 and false becomes 0; a negative result puts firstNeighbor first.
-        return Number(secondMatches) - Number(firstMatches);
+    document.querySelectorAll("[data-view]").forEach(function(button) {
+        if (button.dataset.view === viewId) button.setAttribute("aria-current", "page");
+        else button.removeAttribute("aria-current");
     });
+    document.querySelector(`#${viewId} h2`).focus();
+}
 
-    console.log("Neighbors with matching availability:", availableNeighbors);
-    console.log(profile);
+// Cards use textContent so profile text is displayed safely as text.
+function createNeighborCard(neighbor) {
+    const card = document.createElement("article");
+    const name = document.createElement("h3");
+    name.textContent = neighbor.name;
+    const introduction = document.createElement("p");
+    introduction.textContent = neighbor.aboutMe;
+    const preferences = document.createElement("p");
+    preferences.textContent = `${friendshipLabels[neighbor.friendType]} · ${availabilityLabels[neighbor.availability]}`;
+    card.append(name, introduction, preferences);
+    return card;
+}
 
-    // Save this profile in the browser so it survives a reload.
-    localStorage.setItem("thisWayProfile", JSON.stringify(profile));
+function addActivityButton(card, neighbor, profile) {
+    // Ask for AI only when clicked, rather than spending quota on every match.
+    const activityButton = document.createElement("button");
+    activityButton.type = "button";
+    activityButton.textContent = "Suggest an outdoor activity with Gemma";
 
-    // Clear the previous results before showing this submission.
-    results.textContent = "";
+    const activityResult = document.createElement("p");
+    activityResult.setAttribute("aria-live", "polite");
 
-    if (availableNeighbors.length === 0) {
-        results.textContent = "No neighbors share that availability yet.";
-    } else {
-        const heading = document.createElement("h2");
-        heading.textContent = "Neighbors who share your availability";
-        results.appendChild(heading);
+    activityButton.addEventListener("click", async function() {
+        activityButton.disabled = true;
+        activityResult.textContent = "Gemma is thinking of an activity…";
 
-        // Build one paragraph per neighbor, with a reason for the recommendation.
-        availableNeighbors.forEach(function(neighbor) {
-            const description = document.createElement("p");
-            const sameFriendshipGoal = neighbor.friendType === profile.friendType;
-
-            const matchReason = sameFriendshipGoal
-                ? "You share availability and a friendship goal."
-                : "You share availability.";
-
-            // Look up a readable label using the neighbor's stored friendship value.
-            const friendshipLabel = friendshipLabels[neighbor.friendType];
-
-            description.textContent =
-                `${neighbor.name}: ${neighbor.aboutMe} Looking for: ${friendshipLabel}. ${matchReason}`;
-
-            results.appendChild(description);
-
-            // Ask for AI only when clicked, rather than spending quota on every match.
-            const activityButton = document.createElement("button");
-            activityButton.type = "button";
-            activityButton.textContent = "Suggest an outdoor activity with Gemma";
-
-            const activityResult = document.createElement("p");
-            activityResult.setAttribute("aria-live", "polite");
-
-            activityButton.addEventListener("click", async function() {
-                activityButton.disabled = true;
-                activityResult.textContent = "Gemma is thinking of an activity…";
-
-                try {
-                    // fetch() sends these profiles to our backend, which holds the key.
-                    const response = await fetch("/api/activity", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ profile: profile, neighbor: neighbor })
-                    });
-
-                    // Live Server cannot run our backend; use the Node server instead.
-                    if (!(response.headers.get("content-type") || "").includes("application/json")) {
-                        throw new Error("Open the app at http://127.0.0.1:3000 using the Node server.");
-                    }
-
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.error || "Could not generate an activity.");
-                    }
-
-                    // Treat AI output as text, never executable HTML.
-                    activityResult.textContent = `Gemma suggestion: ${data.activity}`;
-                } catch (error) {
-                    activityResult.textContent = error.message;
-                } finally {
-                    activityButton.disabled = false;
-                }
+        try {
+            // fetch() sends these profiles to our backend, which holds the key.
+            const response = await fetch("/api/activity", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ profile: profile, neighbor: neighbor })
             });
 
-            results.appendChild(activityButton);
-            results.appendChild(activityResult);
-        });
+            // Live Server cannot run our backend; use the Node server instead.
+            if (!(response.headers.get("content-type") || "").includes("application/json")) {
+                throw new Error("Open the app at http://127.0.0.1:3000 using the Node server.");
+            }
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || "Could not generate an activity.");
+            }
+
+            // Treat AI output as text, never executable HTML.
+            activityResult.textContent = `Gemma suggestion: ${data.activity}`;
+        } catch (error) {
+            activityResult.textContent = error.message;
+        } finally {
+            activityButton.disabled = false;
+        }
+    });
+
+    card.append(activityButton, activityResult);
+}
+
+function renderMatches() {
+    // filter() produces a separate array; sorting it preserves directory order.
+    const availableNeighbors = neighbors.filter(function(neighbor) {
+        return neighbor.availability === currentProfile.availability;
+    });
+    availableNeighbors.sort(function(firstNeighbor, secondNeighbor) {
+        const firstMatches = firstNeighbor.friendType === currentProfile.friendType;
+        const secondMatches = secondNeighbor.friendType === currentProfile.friendType;
+        return Number(secondMatches) - Number(firstMatches);
+    });
+    results.textContent = "";
+    if (availableNeighbors.length === 0) {
+        results.textContent = "No neighbors share that availability yet. Explore Community to meet everyone, or edit your preferences.";
+        return;
     }
+    availableNeighbors.forEach(function(neighbor) {
+        const card = createNeighborCard(neighbor);
+        const reason = document.createElement("p");
+        reason.textContent = neighbor.friendType === currentProfile.friendType
+            ? "You share availability and a friendship goal."
+            : "You share availability.";
+        card.appendChild(reason);
+        // Capture this saved profile for the request associated with this card.
+        addActivityButton(card, neighbor, currentProfile);
+        results.appendChild(card);
+    });
+}
+
+// The community is independent of matching: everyone remains discoverable.
+neighbors.forEach(function(neighbor) {
+    document.getElementById("community-list").appendChild(createNeighborCard(neighbor));
+});
+
+document.getElementById("try-demo").addEventListener("click", function() {
+    document.getElementById("welcome").hidden = true;
+    document.getElementById("demo-app").hidden = false;
+    if (currentProfile) {
+        fillProfileForm(currentProfile);
+        renderMatches();
+        showView("matches-view");
+    } else {
+        // A fictional starting profile makes the demo immediately usable and editable.
+        fillProfileForm({
+            aboutMe: "I enjoy neighborhood walks, photography, and meeting new people.",
+            friendType: "activity",
+            availability: "weeknights"
+        });
+        showView("profile-view");
+    }
+});
+
+document.querySelectorAll("[data-view]").forEach(function(button) {
+    button.addEventListener("click", function() {
+        if (button.dataset.view === "matches-view" && !currentProfile) {
+            statusMessage.textContent = "Save your demo profile first to see suggested matches.";
+            showView("profile-view");
+            return;
+        }
+        statusMessage.textContent = "";
+        showView(button.dataset.view);
+    });
+});
+
+profileForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    const profile = {
+        aboutMe: document.getElementById("about-me").value.trim(),
+        friendType: document.getElementById("friend-type").value,
+        availability: document.getElementById("availability").value
+    };
+    const error = document.getElementById("profile-error");
+    if (!isValidProfile(profile)) {
+        error.textContent = "Please fill out all three fields. Keep your introduction to 2,000 characters or fewer.";
+        return;
+    }
+    error.textContent = "";
+    currentProfile = profile;
+    try {
+        localStorage.setItem("thisWayProfile", JSON.stringify(profile));
+        statusMessage.textContent = "Profile saved in this browser. Your matches have been updated.";
+    } catch {
+        statusMessage.textContent = "Your matches are updated, but this browser could not save your profile for next time.";
+    }
+    renderMatches();
+    showView("matches-view");
 });

@@ -19,7 +19,10 @@ Open http://127.0.0.1:3000 instead of VS Code Live Server. If your key is alread
 exported in that terminal, only run `node server.mjs`. Stop with Control-C.
 The key lasts for the terminal session and is never stored in project files.
 
-Submit your profile, then click a neighbor's activity button to request a live
+Choose **Try the demo**, review or edit the fictional starter profile, and submit it.
+Use **Suggested matches**, **Community**, and **Edit profile** to navigate. Returning
+visitors can reopen saved matches; Community always lists all six neighbors.
+Then click a neighbor's activity button to request a live
 Gemma suggestion. Only use fictional introductions for this demo: the two
 profiles are sent to Google's API. Free API access has usage limits.
 

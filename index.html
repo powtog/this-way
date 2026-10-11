@@ -16,6 +16,24 @@
             Meet neighbors you might actually want to know.
         </p>
 
+        <section id="welcome" aria-labelledby="welcome-title">
+            <h2 id="welcome-title">A familiar face starts with hello.</h2>
+            <p>Explore Maple Court, a fictional apartment building with six neighbors open to making friends.</p>
+            <button id="try-demo" type="button">Try the demo</button>
+        </section>
+
+        <div id="demo-app" hidden>
+        <p>Demo building: Maple Court · All neighbors are fictional. No account needed.</p>
+        <nav aria-label="Demo navigation">
+            <button type="button" data-view="matches-view">Suggested matches</button>
+            <button type="button" data-view="community-view">Community</button>
+            <button type="button" data-view="profile-view">Edit profile</button>
+        </nav>
+        <p id="app-status" role="status"></p>
+
+        <section id="profile-view" hidden aria-labelledby="profile-title">
+        <h2 id="profile-title" tabindex="-1">Your demo profile</h2>
+        <p>Use fictional details. Your preferences stay in this browser. Requesting an activity sends your introduction and the selected neighbor’s profile to Google-hosted Gemma.</p>
         <form id="profile-form">
 
             <label for="about-me">
@@ -24,6 +42,7 @@
 
             <textarea
                 id="about-me"
+                maxlength="2000"
                 placeholder="I'm studying computer science, like trying new restaurants, walking around the city, and talking about tech..."
             ></textarea>
 
@@ -59,7 +78,21 @@
 
         </form>
 
-        <section id="results"></section>
+        <p id="profile-error" role="alert"></p>
+        </section>
+
+        <section id="matches-view" hidden aria-labelledby="matches-title">
+            <h2 id="matches-title" tabindex="-1">Suggested matches</h2>
+            <p>We match schedules, then prioritize shared friendship goals. Gemma suggests activities; it does not rank these neighbors.</p>
+            <div id="results"></div>
+        </section>
+
+        <section id="community-view" hidden aria-labelledby="community-title">
+            <h2 id="community-title" tabindex="-1">Meet your community</h2>
+            <p>All six demo neighbors are open to making friends, including people with different schedules or friendship goals.</p>
+            <div id="community-list"></div>
+        </section>
+        </div>
     </main>
 
     <script src="script.js"></script>
