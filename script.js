@@ -119,6 +119,22 @@ function createNeighborCard(neighbor) {
     return card;
 }
 
+// Demo addresses use example.com and cannot connect visitors to real residents.
+function addContactOption(card, neighbor) {
+    const contact = document.createElement("details");
+    contact.className = "match-contact";
+    const toggle = document.createElement("summary");
+    toggle.textContent = `Show ${neighbor.name}’s email`;
+    const email = document.createElement("p");
+    email.className = "contact-email";
+    email.textContent = `${neighbor.name.toLowerCase()}@example.com`;
+    const note = document.createElement("p");
+    note.className = "contact-note";
+    note.textContent = "Fictional demo email — messages will not reach a real neighbor.";
+    contact.append(toggle, email, note);
+    card.appendChild(contact);
+}
+
 function addActivityButton(card, neighbor, profile) {
     // Ask for AI only when clicked, rather than spending quota on every match.
     const activityButton = document.createElement("button");
@@ -209,6 +225,7 @@ function renderMatches() {
             : "You share availability.";
         card.appendChild(reason);
         // Capture this saved profile for the request associated with this card.
+        addContactOption(card, neighbor);
         addActivityButton(card, neighbor, currentProfile);
         results.appendChild(card);
     });
