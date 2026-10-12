@@ -1,3 +1,5 @@
+import { createActivityPolicy } from "./activity-policy.mjs";
+import { createQuota } from "./quota.mjs";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
@@ -17,10 +19,26 @@ function sendJson(response, status, data) {
 
 // Node runs this code on your computer, outside the browser.
 // The optional settings let us test with fake AI responses instead of using quota.
-export function createApp({ apiKey = process.env.GEMINI_API_KEY, fetchModel = fetch } = {}) {
+export function createApp({ apiKey = process.env.GEMINI_API_KEY, fetchModel = fetch,
+    policy = createActivityPolicy({ secret: process.env.VISITOR_COOKIE_SECRET }),
+    quota = createQuota({
+        file: process.env.AI_QUOTA_FILE,
+        dailyLimit: Number(process.env.AI_DAILY_LIMIT || 250),
+        minuteLimit: Number(process.env.AI_MINUTE_LIMIT || 60),
+        concurrency: Number(process.env.AI_CONCURRENCY || 4)
+    })
+} = {}) {
+    if (process.env.NODE_ENV === "production" && !process.env.AI_QUOTA_FILE) {
+        throw new Error("Production requires AI_QUOTA_FILE on persistent storage.");
+    }
     return createServer(async function(request, response) {
+        response.setHeader("X-Content-Type-Options", "nosniff");
         const pathname = new URL(request.url, "http://localhost").pathname;
 
+        if (request.method === "GET" && pathname === "/health") {
+            sendJson(response, 200, { status: "ok" });
+            return;
+        }
         if (request.method === "GET" && publicFiles[pathname]) {
             const [filename, contentType] = publicFiles[pathname];
             try {
@@ -39,10 +57,13 @@ export function createApp({ apiKey = process.env.GEMINI_API_KEY, fetchModel = fe
         }
 
         if (!apiKey) {
-            sendJson(response, 503, { error: "Set GEMINI_API_KEY in the server terminal, then restart the server." });
+            sendJson(response, 503, { error: "Activity suggestions are not configured yet. Please try again later." });
             return;
         }
 
+        let reservation;
+        let cacheKey;
+        let activityForCache;
         try {
             // Read the JSON sent by the browser, with a small size limit.
             let body = "";
@@ -73,6 +94,34 @@ export function createApp({ apiKey = process.env.GEMINI_API_KEY, fetchModel = fe
                 sendJson(response, 400, { error: "Send two complete profiles, with each field at most 2,000 characters." });
                 return;
             }
+
+            const visitor = policy.visitor(request, response);
+            const key = policy.key(profile, neighbor);
+            const cached = policy.get(key);
+            if (cached) {
+                sendJson(response, 200, { activity: cached });
+                return;
+            }
+            const attempt = policy.begin(visitor, key);
+            if (attempt.error) {
+                response.setHeader("Retry-After", String(attempt.retry));
+                sendJson(response, 429, { error: attempt.error });
+                return;
+            }
+            try {
+                reservation = quota.reserve();
+            } catch {
+                sendJson(response, 503, { error: "Activity suggestions are temporarily unavailable." });
+                return;
+            }
+            if (reservation.error) {
+                response.setHeader("Retry-After", String(reservation.retry));
+                sendJson(response, 429, { error: reservation.error });
+                return;
+            }
+
+            attempt.commit();
+            cacheKey = key;
 
             const prompt = `Suggest one low-cost outdoor activity for these two neighbors.
 Use their stated interests and availability. Do not invent shared interests or specific local venues.
@@ -138,6 +187,7 @@ Neighbor: ${JSON.stringify({ aboutMe: neighbor.aboutMe, friendType: neighbor.fri
                 return;
             }
 
+            activityForCache = activity;
             sendJson(response, 200, { activity });
         } catch (error) {
             // Never send raw provider errors or credentials back to the browser.
@@ -158,13 +208,19 @@ Neighbor: ${JSON.stringify({ aboutMe: neighbor.aboutMe, friendType: neighbor.fri
                     ? "Gemma took longer than 45 seconds. Please try again."
                     : `Could not reach Gemma (${diagnostic}). Check the server terminal.`
             });
+        } finally {
+            reservation?.release?.();
+            if (cacheKey) policy.finish(cacheKey, activityForCache);
         }
     });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-    // Local development only. Public deployment will use a hosted backend later.
-    createApp().listen(3000, "127.0.0.1", () => {
-        console.log("This Way is running at http://127.0.0.1:3000");
-    });
+    const port = Number(process.env.PORT || 3000);
+    const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
+    const server = createApp();
+    server.requestTimeout = 15000;
+    server.headersTimeout = 10000;
+    server.listen(port, host, () => console.log(`This Way is listening on port ${port}`));
+    process.on("SIGTERM", () => server.close());
 }

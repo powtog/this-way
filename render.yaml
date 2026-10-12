@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: this-way
+    runtime: docker
+    plan: starter
+    numInstances: 1
+    healthCheckPath: /health
+    disk:
+      name: ai-quota
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AI_QUOTA_FILE
+        value: /data/ai-quota.json
+      - key: AI_DAILY_LIMIT
+        value: "250"
+      - key: AI_MINUTE_LIMIT
+        value: "60"
+      - key: AI_CONCURRENCY
+        value: "4"
+      - key: VISITOR_COOKIE_SECRET
+        generateValue: true

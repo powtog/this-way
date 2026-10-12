@@ -39,7 +39,60 @@ profiles are sent to Google's API. Free API access has usage limits.
 
 Profiles are stored only in this browser's localStorage. All six neighbors are
 fictional and assumed to belong to one demo building. Accounts, a shared database,
-building verification, and public deployment are not implemented yet.
+and building verification are not implemented yet.
 
-The server binds only to your computer. It is a development server, without
-authentication or public rate limiting; public deployment is a separate step.
+## Public hosting (prepared for Render)
+
+The Dockerfile and `render.yaml` deploy the frontend and backend together, so the
+browser keeps using `/api/activity` on the same origin. Production binds to
+`0.0.0.0` and the hosting service's `PORT`. `/health` is the health check.
+
+1. Push this repository to GitHub.
+2. In Render, create a **Blueprint** from that repository using `render.yaml`.
+3. Review the paid Starter service and persistent disk shown by Render before
+   creating them. Keep exactly one instance: the quota store is single-process.
+4. Enter `GEMINI_API_KEY` in Render's secret environment variable prompt. Never
+   put its value in Git, Docker build arguments, or browser code.
+5. Deploy and open the generated HTTPS URL. Try the profile flow and one activity.
+   Confirm `/health` returns 200 and `/.env` returns 404.
+
+See [Render's Blueprint reference](https://render.com/docs/blueprint-spec) for
+secret prompts and disk configuration. The disk is required to preserve request
+counts across restarts and redeploys. Production refuses to start without an
+`AI_QUOTA_FILE` setting; ensure its path is actually on the mounted disk.
+
+Default limits across **all visitors combined**:
+
+- `AI_DAILY_LIMIT=250`: at most 250 provider attempts per UTC calendar day.
+- `AI_MINUTE_LIMIT=60`: at most 60 attempts in a rolling minute.
+- `AI_CONCURRENCY=4`: at most four outstanding provider requests.
+
+Each browser also gets five new AI attempts per rolling ten minutes, tracked with
+an HttpOnly signed cookie. Render generates `VISITOR_COOKIE_SECRET`; keep it
+stable across deploys. Clearing cookies or using another browser can bypass this
+visitor limit, so the durable shared daily cap remains the quota backstop.
+Visitor counters are held in memory and reset on server restart.
+
+Successful suggestions for identical profile fields are cached in memory for ten
+minutes (up to 500 entries). Cache hits remain available when limits are reached
+and consume no provider or visitor quota. Concurrent identical requests receive
+a short retry message instead of triggering duplicate provider calls. Failed
+requests are not cached. Cache entries disappear on restart.
+
+Limits return HTTP 429 with `Retry-After`. Reservations persist before contacting
+Google; failed provider attempts count too. Storage failures block AI requests.
+Static pages and matching continue working after the quota is exhausted. Local
+runs use memory unless `AI_QUOTA_FILE` is set. Change the limits in the hosting
+environment; each request still allows up to 4,096 output tokens. This caps request
+volume, not a dollar amount. An anonymous visitor can exhaust the shared daily
+allowance; these limits do not provide accounts or fair per-person allocation.
+Do not run multiple replicas against this file store.
+
+Run checks without calling Google:
+
+```sh
+node --test *.test.mjs
+```
+
+Deployment files are prepared; a live deployment and the hosted secret still
+need to be configured in your hosting account.
